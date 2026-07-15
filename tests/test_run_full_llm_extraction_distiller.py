@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""novel-analysis-skill · T-D2 run_full_llm_extraction.py Distiller 集成测试
+"""novel-to-graph-skill · T-D2 run_full_llm_extraction.py Distiller 集成测试
 
 锚定: v0.4.1_plan_final.md §T-D2
 检查点: CP-D2.1 (distill 注入 S3 prompt) + CP-D2.2 (缓存可复用) + CP-D2.3 (降级开关生效)

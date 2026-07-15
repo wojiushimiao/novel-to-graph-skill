@@ -1,4 +1,4 @@
-/* novel-analysis-skill · report.js
+/* novel-to-graph-skill · report.js
  * 锚定: L3_接口契约与约束.md §3.2 报表前端功能接口
  * 实现: 搜索 / 节点点击 / 关系筛选 / 强度筛选 / 社群视图 / 导出MD / 导出JSON
  */

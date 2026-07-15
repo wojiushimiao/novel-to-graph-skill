@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""novel-analysis-skill · S4-S7 工具链处理脚本
+"""novel-to-graph-skill · S4-S7 工具链处理脚本
 
 从 LLM 输出 (llm_outputs_full_llm.json) 执行完整工具链处理：
 - S4: 清洗校验 (json_cleaner → schema_validator → low_value_filter)
@@ -25,7 +25,7 @@ import logging
 from pathlib import Path
 from collections import defaultdict
 
-SKILL_DIR = Path(r'd:\Gaia\08_记忆数据\knowledge-base\skills\novel-analysis-skill')
+SKILL_DIR = Path(r'd:\Gaia\08_记忆数据\knowledge-base\skills\novel-to-graph-skill')
 WORKSPACE = SKILL_DIR / 'tests' / 'extraction_workspace_llm'
 LLM_OUTPUT_FILE = WORKSPACE / 'llm_outputs_full_llm.json'
 OUTPUT_DIR = WORKSPACE / 'output'
@@ -723,7 +723,7 @@ def compute_quality_metrics(items: list[dict], entities: list[Entity],
 
 
 def main():
-    print('=== novel-analysis-skill · S4-S7 工具链处理 ===\n')
+    print('=== novel-to-graph-skill · S4-S7 工具链处理 ===\n')
 
     t0 = time.time()
 

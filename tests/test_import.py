@@ -3,7 +3,7 @@
 import sys
 import os
 
-SKILL_DIR = os.path.normpath(r'D:\Gaia\08_记忆数据\knowledge-base\skills\novel-analysis-skill')
+SKILL_DIR = os.path.normpath(r'D:\Gaia\08_记忆数据\knowledge-base\skills\novel-to-graph-skill')
 CORE_DIR = os.path.normpath(r'D:\Gaia\06_核心代码')
 
 # 关键：CORE_DIR 先插入（位置1），SKILL_DIR 后插入（位置0，优先）

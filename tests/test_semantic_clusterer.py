@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""novel-analysis-skill · T-C2 semantic_clusterer.py 测试
+"""novel-to-graph-skill · T-C2 semantic_clusterer.py 测试
 
 锚定: v0.4.1_plan_final.md §T-C2
 检查点: CP-C2.1 (时序聚类识别阶段边界) / CP-C2.2 (场景聚类识别地点转移) / CP-C2.3 (降级关键词模式)

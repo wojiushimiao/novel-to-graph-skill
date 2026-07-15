@@ -18,7 +18,7 @@ import sqlite3
 from pathlib import Path
 from collections import defaultdict
 
-SKILL_DIR = Path(r'd:\Gaia\08_记忆数据\knowledge-base\skills\novel-analysis-skill')
+SKILL_DIR = Path(r'd:\Gaia\08_记忆数据\knowledge-base\skills\novel-to-graph-skill')
 WORKSPACE = SKILL_DIR / 'tests' / 'extraction_workspace_llm'
 OUTPUT_DIR = WORKSPACE / 'output'
 S7_DB_PATH = OUTPUT_DIR / 'full_llm_graph_s7.db'

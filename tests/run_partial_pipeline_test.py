@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""novel-analysis-skill · 部分数据S4-S7管线验证脚本
+"""novel-to-graph-skill · 部分数据S4-S7管线验证脚本
 
 从已完成的 chunk_*.json 文件加载部分数据，执行 S4-S7 管线验证。
 此脚本用于在全量LLM提取仍在进行时，验证下游管线的正确性。
@@ -22,7 +22,7 @@ import glob
 from pathlib import Path
 from collections import defaultdict
 
-SKILL_DIR = Path(r'd:\Gaia\08_记忆数据\knowledge-base\skills\novel-analysis-skill')
+SKILL_DIR = Path(r'd:\Gaia\08_记忆数据\knowledge-base\skills\novel-to-graph-skill')
 WORKSPACE = SKILL_DIR / 'tests' / 'extraction_workspace_llm'
 CHUNKS_DIR = WORKSPACE / 'llm_outputs'
 OUTPUT_DIR = WORKSPACE / 'output_partial'
@@ -374,7 +374,7 @@ def compute_quality_metrics(items: list[dict], entities: list[Entity],
 
 
 def main():
-    print('=== novel-analysis-skill · 部分数据 S4-S7 管线验证 ===\n')
+    print('=== novel-to-graph-skill · 部分数据 S4-S7 管线验证 ===\n')
 
     t0 = time.time()
 

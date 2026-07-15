@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""novel-analysis-skill · S6 轴化图遍历审查脚本
+"""novel-to-graph-skill · S6 轴化图遍历审查脚本
 
 按轴关系模型执行图遍历审查：
 1. 旧关系轴化转换（7种旧关系 → 6种轴关系）
@@ -25,7 +25,7 @@ from pathlib import Path
 from collections import defaultdict
 from typing import Any
 
-SKILL_DIR = Path(r'd:\Gaia\08_记忆数据\knowledge-base\skills\novel-analysis-skill')
+SKILL_DIR = Path(r'd:\Gaia\08_记忆数据\knowledge-base\skills\novel-to-graph-skill')
 WORKSPACE = SKILL_DIR / 'tests' / 'extraction_workspace_llm'
 OUTPUT_DIR = WORKSPACE / 'output'
 DB_PATH = OUTPUT_DIR / 'full_llm_graph.db'
@@ -443,7 +443,7 @@ def s6_review(db_path: Path) -> dict:
 
 
 def main():
-    print('=== novel-analysis-skill · S6 轴化图遍历审查 ===\n')
+    print('=== novel-to-graph-skill · S6 轴化图遍历审查 ===\n')
 
     if not DB_PATH.exists():
         print(f'错误: DB 不存在: {DB_PATH}')

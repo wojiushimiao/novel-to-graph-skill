@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""novel-analysis-skill · 摘要语义聚类器（SemanticClusterer）
+"""novel-to-graph-skill · 摘要语义聚类器（SemanticClusterer）
 
 锚定: v0.4.1_plan_final.md §T-C2
 功能: 对 SummaryBuffer flush 输出的短期摘要运行 3 类聚类，识别剧情结构边界。

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""novel-analysis-skill · 全量 LLM 抽取脚本 (S3 阶段)
+"""novel-to-graph-skill · 全量 LLM 抽取脚本 (S3 阶段)
 
 按 extraction_meta_prompt.md 规则，对 full_novel.txt 的每个 chunk 调用 LLM 执行语义抽取。
 
@@ -27,7 +27,7 @@ from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any
 
-SKILL_DIR = Path(r'd:\Gaia\08_记忆数据\knowledge-base\skills\novel-analysis-skill')
+SKILL_DIR = Path(r'd:\Gaia\08_记忆数据\knowledge-base\skills\novel-to-graph-skill')
 NOVEL_PATH = Path(r'D:\Gaia\07_子项目代码\LLM对话作品卡\全职法师\novel_text\full_novel.txt')
 WORKSPACE = SKILL_DIR / 'tests' / 'extraction_workspace_llm'
 LLM_OUTPUTS_DIR = WORKSPACE / 'llm_outputs'
@@ -367,7 +367,7 @@ def merge_all_results(total: int) -> list[dict]:
 def main():
     global _completed, _failed, _started_at
 
-    print('=== novel-analysis-skill · 全量 LLM 抽取 (S3) ===\n')
+    print('=== novel-to-graph-skill · 全量 LLM 抽取 (S3) ===\n')
 
     # 确保工作目录存在
     WORKSPACE.mkdir(parents=True, exist_ok=True)

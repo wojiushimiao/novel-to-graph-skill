@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""novel-analysis-skill · T-C1 summary_buffer.py 测试
+"""novel-to-graph-skill · T-C1 summary_buffer.py 测试
 
 锚定: v0.4.1_plan_final.md §T-C1
 检查点: CP-C1.1 (窗口溢出自动丢弃) / CP-C1.2 (flush 按 chunk_index 有序) / CP-C1.3 (空窗口 flush 不报错)

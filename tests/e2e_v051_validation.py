@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""novel-analysis-skill · v0.5.1 端到端实测验证脚本
+"""novel-to-graph-skill · v0.5.1 端到端实测验证脚本
 
 验证 v0.5.1 两大新功能在真实小说数据（全职法师）上的表现：
 - B1: 骨架审查与重做（evaluate_skeleton_quality + rebuild_skeleton）
@@ -19,7 +19,7 @@ import logging
 from pathlib import Path
 from collections import Counter
 
-SKILL_DIR = Path(r'd:\Gaia\08_记忆数据\knowledge-base\skills\novel-analysis-skill')
+SKILL_DIR = Path(r'd:\Gaia\08_记忆数据\knowledge-base\skills\novel-to-graph-skill')
 WORKSPACE = SKILL_DIR / 'tests' / 'extraction_workspace_llm'
 DISTILL_DIR = WORKSPACE / 'distill'
 LLM_OUTPUTS_DIR = WORKSPACE / 'llm_outputs'

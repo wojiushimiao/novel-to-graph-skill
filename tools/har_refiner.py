@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""novel-analysis-skill · HAR (Hallucination-Aware Refinement) 自洽校验工具
+"""novel-to-graph-skill · HAR (Hallucination-Aware Refinement) 自洽校验工具
 
 锚定: v0.4.1_plan_final.md §T-B1
 功能: 对 Info 不达标的条目执行递归重抽（≤3 次），含预算上限和中止阈值。

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""novel-analysis-skill · 骨架质量评估单元测试（v0.5.1 B1）
+"""novel-to-graph-skill · 骨架质量评估单元测试（v0.5.1 B1）
 
 锚定: graph_builder.evaluate_skeleton_quality
       timeline_skeleton_builder.Skeleton

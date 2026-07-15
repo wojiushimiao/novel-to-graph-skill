@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""novel-analysis-skill · info字段压缩工具
+"""novel-to-graph-skill · info字段压缩工具
 
 锚定: L3_接口契约与约束.md §1.1.4
       track_C_plan.md §T-C2

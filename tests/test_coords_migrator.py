@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""novel-analysis-skill · T-C1 coords_migrator.py 测试
+"""novel-to-graph-skill · T-C1 coords_migrator.py 测试
 
 锚定: track_C_plan.md §T-C1
 检查点: CP-C1.1 (旧六维→新五维迁移正确) + CP-C1.2 (K 维度被移除)

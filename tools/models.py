@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""novel-analysis-skill · 数据模型与异常定义
+"""novel-to-graph-skill · 数据模型与异常定义
 
 锚定: L2_数据模型与核心算法.md §一·数据模型
       L3_接口契约与约束.md §五·错误类型定义
@@ -15,7 +15,7 @@ from typing import Any
 # ─── 异常层级 ──────────────────────────────────────────────
 
 class NovelAnalysisError(Exception):
-    """novel-analysis-skill 基础异常。"""
+    """novel-to-graph-skill 基础异常。"""
 
 
 class TextTooLargeError(NovelAnalysisError):

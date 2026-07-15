@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""novel-analysis-skill · 时序骨架构建工具
+"""novel-to-graph-skill · 时序骨架构建工具
 
 锚定: L3_接口契约与约束.md §1.1.2
       L2_数据模型与核心算法.md §2.6 (时序骨架构建)

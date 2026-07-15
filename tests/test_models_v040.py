@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""novel-analysis-skill · T-A1 models.py v0.4.0 升级测试
+"""novel-to-graph-skill · T-A1 models.py v0.4.0 升级测试
 
 锚定: track_A_plan.md §T-A1
 检查点: CP-A1.1 (E_module 类型识别) + CP-A1.2 (COORD_DIMENSIONS 五维)
@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-# 将 tools 目录加入路径（novel-analysis-skill 目录名含连字符，无法作为 Python 包）
+# 将 tools 目录加入路径（novel-to-graph-skill 目录名含连字符，无法作为 Python 包）
 _TOOLS_DIR = Path(__file__).resolve().parent.parent / "tools"
 if str(_TOOLS_DIR) not in sys.path:
     sys.path.insert(0, str(_TOOLS_DIR))

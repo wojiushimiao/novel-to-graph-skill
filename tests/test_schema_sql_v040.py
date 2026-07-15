@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""novel-analysis-skill · T-A3 schema.sql v0.4.0 升级测试
+"""novel-to-graph-skill · T-A3 schema.sql v0.4.0 升级测试
 
 锚定: track_A_plan.md §T-A3
 检查点: CP-A3.1 (schema.sql 可执行) + CP-A3.2 (E_module CHECK 约束)

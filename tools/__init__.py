@@ -1,4 +1,4 @@
-"""novel-analysis-skill · 工具函数包
+"""novel-to-graph-skill · 工具函数包
 
 双轨架构：tools/ 仅含纯 Python 工具函数，不调用 LLM、不进行智能体编排、不提供 CLI/HTTP API。
 智能体读取 prompts/ 中的执行说明后，按需调用本包中的工具函数。

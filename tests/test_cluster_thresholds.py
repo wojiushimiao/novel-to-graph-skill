@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""novel-analysis-skill · T-B1.1 semantic_clusterer 阈值参数化测试
+"""novel-to-graph-skill · T-B1.1 semantic_clusterer 阈值参数化测试
 
 锚定: v0.5.1_升级/tasks/plan.md §T-B1.1
 检查点:

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""novel-analysis-skill · T-B2 schema_validator.py v0.4.1 HAR 接口扩展测试
+"""novel-to-graph-skill · T-B2 schema_validator.py v0.4.1 HAR 接口扩展测试
 
 锚定: v0.4.1_plan_final.md §T-B2
 检查点: CP-B2.1 (四段结构3态) / CP-B2.2 (strip_src_markers) / CP-B2.3 (validate_src_marker)

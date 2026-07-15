@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""novel-analysis-skill · T-B3 run_s4_s7_pipeline.py HAR 集成测试
+"""novel-to-graph-skill · T-B3 run_s4_s7_pipeline.py HAR 集成测试
 
 锚定: v0.4.1_plan_final.md §T-B3
 检查点:

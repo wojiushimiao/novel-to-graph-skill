@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""novel-analysis-skill · 短期记忆滑动窗口（SummaryBuffer）
+"""novel-to-graph-skill · 短期记忆滑动窗口（SummaryBuffer）
 
 锚定: v0.4.1_plan_final.md §T-C1
 功能: 为 T_main 增量压缩提供缓冲机制，按 chunk 顺序累积短期摘要。

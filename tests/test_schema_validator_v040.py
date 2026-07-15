@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""novel-analysis-skill · T-A2 schema_validator.py v0.4.0 升级测试
+"""novel-to-graph-skill · T-A2 schema_validator.py v0.4.0 升级测试
 
 锚定: track_A_plan.md §T-A2
 检查点: CP-A2.1 ~ CP-A2.6 (6 个校验函数测试)

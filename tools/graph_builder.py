@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""novel-analysis-skill · 图构建器
+"""novel-to-graph-skill · 图构建器
 
 锚定: L2_数据模型与核心算法.md §2.11
       L3_接口契约与约束.md §1.3.7

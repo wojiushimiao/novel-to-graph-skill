@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""novel-analysis-skill · T-C4 run_s4_s7_pipeline.py 增量压缩集成测试
+"""novel-to-graph-skill · T-C4 run_s4_s7_pipeline.py 增量压缩集成测试
 
 锚定: v0.4.1_plan_final.md §T-C4
 检查点:

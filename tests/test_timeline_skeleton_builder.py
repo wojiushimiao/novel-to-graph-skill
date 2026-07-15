@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""novel-analysis-skill · T-B2 timeline_skeleton_builder.py 测试
+"""novel-to-graph-skill · T-B2 timeline_skeleton_builder.py 测试
 
 锚定: track_B_plan.md §T-B2
 检查点: CP-B2.1 (E_module 实体生成) + CP-B2.2 (T_main 关系仅连接相邻模块)
@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-# 将 tools 目录加入路径（novel-analysis-skill 目录名含连字符，无法作为 Python 包）
+# 将 tools 目录加入路径（novel-to-graph-skill 目录名含连字符，无法作为 Python 包）
 _TOOLS_DIR = Path(__file__).resolve().parent.parent / "tools"
 if str(_TOOLS_DIR) not in sys.path:
     sys.path.insert(0, str(_TOOLS_DIR))

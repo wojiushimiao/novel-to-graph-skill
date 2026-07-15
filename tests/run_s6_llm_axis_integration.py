@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""novel-analysis-skill · S6.5 LLM轴化整合 (历史信息统合系统)
+"""novel-to-graph-skill · S6.5 LLM轴化整合 (历史信息统合系统)
 
 使用"历史信息统合系统-纯LLM整合版.txt"作为LLM系统提示词，
 对S6程序化处理后的数据进行智能轴化建模。
@@ -25,7 +25,7 @@ from pathlib import Path
 from collections import defaultdict
 from typing import Any
 
-SKILL_DIR = Path(r'd:\Gaia\08_记忆数据\knowledge-base\skills\novel-analysis-skill')
+SKILL_DIR = Path(r'd:\Gaia\08_记忆数据\knowledge-base\skills\novel-to-graph-skill')
 WORKSPACE = SKILL_DIR / 'tests' / 'extraction_workspace_llm'
 OUTPUT_DIR = WORKSPACE / 'output'
 S6_DB_PATH = OUTPUT_DIR / 'full_llm_graph_s6.db'
@@ -673,7 +673,7 @@ def generate_final_reports(db_path: Path, output_dir: Path):
 
 
 async def main_async():
-    print('=== novel-analysis-skill · S6.5 LLM轴化整合 (历史信息统合系统) ===\n')
+    print('=== novel-to-graph-skill · S6.5 LLM轴化整合 (历史信息统合系统) ===\n')
 
     t0 = time.time()
 

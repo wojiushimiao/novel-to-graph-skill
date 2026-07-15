@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""novel-analysis-skill · 骨架重做单元测试（v0.5.1 B1）
+"""novel-to-graph-skill · 骨架重做单元测试（v0.5.1 B1）
 
 锚定: graph_builder.rebuild_skeleton
       graph_builder.REBUILD_THRESHOLDS

@@ -11,7 +11,7 @@ import json
 import time
 from pathlib import Path
 
-SKILL_DIR = Path(r'd:\Gaia\08_记忆数据\knowledge-base\skills\novel-analysis-skill')
+SKILL_DIR = Path(r'd:\Gaia\08_记忆数据\knowledge-base\skills\novel-to-graph-skill')
 NOVEL_PATH = Path(r'D:\Gaia\07_子项目代码\LLM对话作品卡\全职法师\novel_text\full_novel.txt')
 
 sys.path.insert(0, r'd:\Gaia\06_核心代码')

@@ -1,5 +1,5 @@
 -- ============================================================
--- novel-analysis-skill · 数据库 DDL 模板 (v0.4.0)
+-- novel-to-graph-skill · 数据库 DDL 模板 (v0.4.0)
 -- 锚定: L3_接口契约与约束.md §二·数据库Schema契约
 --       InkForge ddl.py + 历史信息统合数据库规范 v2.1
 -- 适用: SQLite 3.35+

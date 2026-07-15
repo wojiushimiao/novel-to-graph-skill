@@ -31,7 +31,7 @@ from collections import defaultdict, Counter
 from difflib import SequenceMatcher
 from typing import Any
 
-SKILL_DIR = Path(r'd:\Gaia\08_记忆数据\knowledge-base\skills\novel-analysis-skill')
+SKILL_DIR = Path(r'd:\Gaia\08_记忆数据\knowledge-base\skills\novel-to-graph-skill')
 WORKSPACE = SKILL_DIR / 'tests' / 'extraction_workspace_llm'
 OUTPUT_DIR = WORKSPACE / 'output'
 S6_DB_PATH = OUTPUT_DIR / 'full_llm_graph_s6.db'
@@ -984,7 +984,7 @@ def evaluate_narrative_support(entities: list[dict], relations: list[dict],
 
 def main():
     print('='*60)
-    print('novel-analysis-skill · S7 全量审查与深度优化')
+    print('novel-to-graph-skill · S7 全量审查与深度优化')
     print('='*60)
 
     t0 = time.time()

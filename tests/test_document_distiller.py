@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""novel-analysis-skill · T-D1 document_distiller.py 测试
+"""novel-to-graph-skill · T-D1 document_distiller.py 测试
 
 锚定: v0.4.1_plan_final.md §T-D1
 检查点: CP-D1.1 (Blueprint 四字段完整) / CP-D1.2 (语义块字数 150-400) / CP-D1.3 (降级开关生效)

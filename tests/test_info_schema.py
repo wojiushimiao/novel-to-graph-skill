@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""novel-analysis-skill · T-C.1/T-C.2 差异化 Info Schema 测试
+"""novel-to-graph-skill · T-C.1/T-C.2 差异化 Info Schema 测试
 锚定: v0.5.0 plan.md §T-C.1 / §T-C.2
 """
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""novel-analysis-skill · T-B1 chapter_title_sampler.py 测试
+"""novel-to-graph-skill · T-B1 chapter_title_sampler.py 测试
 
 锚定: track_B_plan.md §T-B1
 检查点: CP-B1.1 (章节标题抽样 ≤200 上限) + CP-B1.2 (等间距抽样保留首尾)
@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-# 将 tools 目录加入路径（novel-analysis-skill 目录名含连字符，无法作为 Python 包；
+# 将 tools 目录加入路径（novel-to-graph-skill 目录名含连字符，无法作为 Python 包；
 # 同时避免与 06_核心代码/tools 包名冲突）
 _TOOLS_DIR = Path(__file__).resolve().parent.parent / "tools"
 if str(_TOOLS_DIR) not in sys.path:

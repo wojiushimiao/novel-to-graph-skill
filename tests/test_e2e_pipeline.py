@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""novel-analysis-skill · T-E1 端到端管线集成测试
+"""novel-to-graph-skill · T-E1 端到端管线集成测试
 
 锚定: track_E_plan.md §T-E1
 检查点:
@@ -26,7 +26,7 @@ from pathlib import Path
 import pytest
 
 # ─── 导入路径设置 ───────────────────────────────────────────
-# novel-analysis-skill 目录名含连字符，无法作为 Python 包；
+# novel-to-graph-skill 目录名含连字符，无法作为 Python 包；
 # 同时 pytest 的 pythonpath 配置 (06_核心代码) 存在冲突的 tools 包，
 # 需清理 sys.modules 中 tools 相关缓存，并强制把 SKILL_DIR 放到
 # sys.path 最前面，确保 tools 解析到本技能的 tools 目录。

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""novel-analysis-skill · T-B.1/T-B.2 chunk 自适应测试
+"""novel-to-graph-skill · T-B.1/T-B.2 chunk 自适应测试
 
 锚定: v0.5.0 plan.md §T-B.1 / §T-B.2
 检查点:
@@ -16,7 +16,7 @@ from pathlib import Path
 import pytest
 
 # ─── 导入路径设置 ───────────────────────────────────────────
-# novel-analysis-skill 目录名含连字符，无法作为 Python 包；
+# novel-to-graph-skill 目录名含连字符，无法作为 Python 包；
 # 把 SKILL_DIR 放到 sys.path 最前面，确保 tools 解析到本技能的 tools 目录。
 for _mod in list(sys.modules):
     if _mod == "tools" or _mod.startswith("tools."):

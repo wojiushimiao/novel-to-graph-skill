@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""novel-analysis-skill · 最终报表生成脚本
+"""novel-to-graph-skill · 最终报表生成脚本
 
 基于 S6 审查后的 DB (full_llm_graph_s6.db) 生成：
 - 最终 HTML 关系图谱（含 Cytoscape.js 力导向图）
@@ -24,7 +24,7 @@ import logging
 from pathlib import Path
 from collections import defaultdict
 
-SKILL_DIR = Path(r'd:\Gaia\08_记忆数据\knowledge-base\skills\novel-analysis-skill')
+SKILL_DIR = Path(r'd:\Gaia\08_记忆数据\knowledge-base\skills\novel-to-graph-skill')
 WORKSPACE = SKILL_DIR / 'tests' / 'extraction_workspace_llm'
 OUTPUT_DIR = WORKSPACE / 'output'
 S6_DB_PATH = OUTPUT_DIR / 'full_llm_graph_s6.db'
@@ -330,7 +330,7 @@ def compute_final_metrics(entities: list[Entity], relations: list[Relation],
 
 
 def main():
-    print('=== novel-analysis-skill · 最终报表生成 ===\n')
+    print('=== novel-to-graph-skill · 最终报表生成 ===\n')
 
     t0 = time.time()
 

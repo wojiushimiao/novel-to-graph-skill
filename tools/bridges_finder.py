@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""novel-analysis-skill · 桥接节点识别器
+"""novel-to-graph-skill · 桥接节点识别器
 
 锚定: L2_数据模型与核心算法.md §2.14
       L3_接口契约与约束.md §1.4.3

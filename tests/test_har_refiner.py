@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""novel-analysis-skill · T-B1 har_refiner.py 测试
+"""novel-to-graph-skill · T-B1 har_refiner.py 测试
 
 锚定: v0.4.1_plan_final.md §T-B1
 检查点: CP-B1.1 (重抽3次后达标率>80%) / CP-B1.2 (HAR_FAILED 写入 hint_tags) / CP-B1.3 (预算上限触发中止)

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""novel-analysis-skill · T-B2.1 character_synthesizer.py 测试
+"""novel-to-graph-skill · T-B2.1 character_synthesizer.py 测试
 
 锚定: v0.5.1_升级/00_技术锚定/L1_模块边界与需求索引.md §FR-04
 检查点: 多卷角色聚合 / 单卷过滤 / 空输入 / 畸形 id 跳过
@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-# 将 tools 目录加入路径（novel-analysis-skill 目录名含连字符，无法作为 Python 包）
+# 将 tools 目录加入路径（novel-to-graph-skill 目录名含连字符，无法作为 Python 包）
 _TOOLS_DIR = Path(__file__).resolve().parent.parent / "tools"
 if str(_TOOLS_DIR) not in sys.path:
     sys.path.insert(0, str(_TOOLS_DIR))

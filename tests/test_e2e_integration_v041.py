@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""novel-analysis-skill · T-E1 v0.4.1 端到端集成验证测试
+"""novel-to-graph-skill · T-E1 v0.4.1 端到端集成验证测试
 
 锚定: v0.4.1_plan_final.md §T-E1
 检查点:

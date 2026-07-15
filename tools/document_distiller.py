@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""novel-analysis-skill · Document Distiller（文档蒸馏器）
+"""novel-to-graph-skill · Document Distiller（文档蒸馏器）
 
 锚定: v0.4.1_plan_final.md §T-D1
 功能: 对每个 chunk 执行 blueprint 重构，将原文蒸馏为结构化语义块。

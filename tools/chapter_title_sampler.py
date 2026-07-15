@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""novel-analysis-skill · 章节标题抽样工具
+"""novel-to-graph-skill · 章节标题抽样工具
 
 锚定: L3_接口契约与约束.md §1.1.1
 
