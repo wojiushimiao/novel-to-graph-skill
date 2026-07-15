@@ -1,481 +1,278 @@
----
-name: novel-analyzer
-description: 四阶段小说精读分析工作流。用于深度分析长篇小说的情节、人物、文风和主题。触发条件：用户请求分析/精读/深度解读小说文本，或需要生成文学分析报告、人物弧光追踪、文风研究、角色档案。执行流程：粗读提取元数据 → 并行精读分块（自动计算分块数和边界）→ 整合生成中文深度报告 → (可选)生成角色档案。输出包含情节梳理、人物列传、文体分析、修辞手法、黄金语录、角色心理侧写。适用于中长篇小说（5k行以上）。
----
+# novel-analysis-skill — 小说叙事语义分析技能
 
-# 小说深度分析工作流
-
-你是小说分析工作流编排器。收到小说文件路径后，执行多阶段分析流程，最终生成专业的文学批评报告，并可选择性生成单个角色的深度档案。
-
-## 工作流程概览
-
-```
-阶段1: 粗读 (你自己执行)
-  ↓ 生成 metadata.json
-阶段2: 精读 (并行 general-purpose agents)
-  ↓ 生成 chunk_01.json, chunk_02.json, ...
-阶段3: 整合 (1个 general-purpose agent)
-  ↓ 生成 report.md
-阶段4: 角色档案生成 (可选, 1个 general-purpose agent)
-  ↓ 生成 characters/profile_<角色名>.md
-```
+> **实施目的**：将小说文本转化为标准化知识库。
 
 ---
 
-## 阶段 1: 粗读元数据提取
+## 1. 技能定位
 
-**执行者**: 你自己（不启动 agent）
+你的职责：读取 SKILL → 拆解输入文档 → 全局剧情模块划分 → 分配子智能体按模块批量提取 → 调用 tools → 写入 DB → 整合清洗 → 触发报表
+所有注明LLM环节均由你直接或分配子智能体执行。
 
-### 1.1 前置准备
-
-```bash
-# 1. 统计总行数
-wc -l <文件路径>
-
-# 2. 创建输出目录（使用绝对路径）
-TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-OUTPUT_DIR="/tmp/novel_analysis/<书名>_${TIMESTAMP}"
-mkdir -p "${OUTPUT_DIR}/chunks"
-```
-
-### 1.2 读取文件样本
-
-由于文件可能很大，分段读取：
-- 开头: `offset=0, limit=2000`
-- 中间: `offset=<total_lines/2>, limit=2000`
-- 结尾: `offset=<total_lines-2000>, limit=2001`
-
-### 1.3 生成元数据
-
-根据提示词模板 `prompts/skim.md` 的要求，生成 JSON 并保存到：
-
-```
-${OUTPUT_DIR}/metadata.json
-```
-
-**元数据结构**:
-```json
-{
-  "metadata": {
-    "title": "书名",
-    "author": "作者",
-    "genre": "具体类型",
-    "tone": "基调关键词",
-    "total_lines": 9301,
-    "total_estimated_tokens": 173500
-  },
-  "main_characters": ["角色1 (身份)", "角色2 (身份)"],
-  "chunking_guide": {
-    "chapter_pattern": "^第\\d+章",
-    "average_chapter_length": "约120行"
-  },
-  "world_setting": "世界观概述（两句话）"
-}
-```
-
-**估算公式**:
-- 中文: `total_tokens = total_chars / 1.35`
-- 英文: `total_tokens = total_words * 1.3`
-
-完整提示词要求见: `prompts/skim.md`
+| 角色 | 职责 | 载体 |
+|------|------|------|
+| **prompts/**（执行说明） | 身份定义、处理规则、输出格式、处理流程、状态机、校验列表、关系建模（含人物小传）、Schema 规范 | Markdown 元提示词 |
+| **tools/**（自动化工具） | 分块、文档蒸馏、摘要缓冲、语义聚类、骨架构建、定位、清洗、校验、过滤、量化、路由、合并、写入、坐标迁移、info压缩、图分析、人物小传、报表 | Python 函数 |
 
 ---
 
-## 阶段 2: 并行精读分块
-
-**执行者**: 多个并行的 `general-purpose` agents
-
-### 2.1 计算分块参数
-
-```python
-target_tokens_per_chunk = 50000  # 配置值
-overlap_lines = 200              # 配置值
-
-# 计算分块数
-num_chunks = ceil(total_estimated_tokens / target_tokens_per_chunk)
-
-# 每块基准行数
-chunk_size = total_lines / num_chunks
-
-# 为每个 chunk 计算边界
-for chunk_id in range(1, num_chunks + 1):
-    target_start = (chunk_id - 1) * chunk_size
-    target_end = chunk_id * chunk_size
-
-    # 上下文（前一块的结尾 200 行，仅用于连续性检查）
-    if chunk_id > 1:
-        context_start = target_start - overlap_lines
-        context_end = target_start
-    else:
-        context_start = None  # 第一块无需上下文
-```
-
-### 2.2 启动并行 agents
-
-**关键**: 在**单个消息**中启动多个后台 Task，实现真正并行：
-
-```python
-# 在一个 response 中发送多个 Task tool calls
-Task(subagent_type="general-purpose", run_in_background=True, ...)  # chunk 1
-Task(subagent_type="general-purpose", run_in_background=True, ...)  # chunk 2
-Task(subagent_type="general-purpose", run_in_background=True, ...)  # chunk 3
-# ...
-```
-
-### 2.3 Agent Prompt 模板
-
-从 `prompts/chunk.md` 读取完整模板，注入以下变量：
-
-**必需变量**:
-- `{{book_title}}` - 从 metadata.json
-- `{{book_genre}}` - 从 metadata.json
-- `{{main_characters}}` - 从 metadata.json (转为字符串)
-- `{{world_setting}}` - 从 metadata.json
-- `{{chunk_id}}` - 当前块编号
-- `{{total_chunks}}` - 总块数
-- `{{file_path}}` - 原始文件路径（绝对路径）
-- `{{output_dir}}` - 输出目录（绝对路径）
-- `{{context_offset}}` / `{{context_limit}}` - 上下文范围（chunk 1 则省略）
-- `{{target_offset}}` / `{{target_limit}}` - 目标分析范围
-
-### 2.4 角色追踪模式（可选）
-
-**触发条件**: 用户在分析请求中明确提到要生成特定角色档案
-
-如果用户提出"分析小说，并生成XX角色档案"，则在每个 chunk agent 的 prompt 末尾追加：
+## 2. 主要任务流程
 
 ```
-### SPECIAL INSTRUCTION: Character Tracking
-
-The user wants a detailed profile for character: {{target_character}}
-
-**If this character appears in your chunk:**
-- Pay extra attention to ALL information about them
-- Record detailed appearance descriptions
-- Capture ALL their dialogue (verbatim)
-- Note their actions, emotions, and interactions
-- Track their relationships with other characters
-- Document any character development or status changes
-
-**In the JSON output:**
-- Ensure {{target_character}} is in the `characters` list with rich details
-- Include them in relevant `plot_events`
-- Add their quotes to `key_passages` with context
-- Note any psychological changes in `status_update`
-
-**If this character does NOT appear in your chunk:**
-- Proceed with normal analysis
-- No need to mention them
+读取技能 → 拆解输入文档 → 全局剧情模块划分 → 按剧情模块批量提取 → 调用 tools 清洗校验 → 规范化写入 DB → LLM 整合清洗 → 触发报表
 ```
 
-**重要**: 这个追加指令必须在每个 chunk agent 启动时都添加，因为无法预知角色会在哪些 chunk 中出现。
+| 阶段 | 动作 | 载体 |
+|------|------|------|
+| **S1 读取技能** | 智能体加载本 SKILL.md，获取任务流程与子智能体编排规范 | AGENT |
+| **S2 拆解输入文档** | 调用 `text_chunker.read_file` + `chunk_text`（v0.5.0 自适应 chunk 大小：默认 20K chars，通过 `detect_chunk_size()` 根据模型上下文自动选择 20K/8K/4K 三档；**v0.5.1 短章打包 `pack_chapters=True`（默认）**：连续短章贪心合并至接近 chunk_size，命中 20K 甜点，避免网文等均匀短章源逐章成块产出数千碎块）将 .txt 拆为 Chunk 列表 → 调用 `document_distiller.distill` 对每个 chunk 生成 Blueprint 摘要（100-300 字）→ 调用 `summary_buffer.SummaryBuffer` 滑动窗口缓冲摘要 | tools |
+| **S2.5 增量压缩聚类+骨架构建** | 调用 `semantic_clusterer.cluster_summaries` 对摘要进行三重聚类（时序/场景/实体）→ 调用 `timeline_skeleton_builder.build_skeleton_incremental` 增量构建 T_main 卷 + E_module 实体 + 关系骨架（RAPTOR 范式，降级时回退 `build_skeleton` 一次性模式） | tools |
+| **S3 按剧情模块批量提取** | 智能体读取 `prompts/extraction_meta_prompt.md`，按剧情模块批量分发子智能体：识别跨章节事件单元 → 填充 info（v0.5.0 差异化 Info Schema：事件四段/角色五段/地点物品规则体系各四段，500-1500字语义提炼）→ 提取其他实体（C/L/I/R），输出 JSON 字符串列表 | AGENT + prompts |
+| **S4 调用 tools 清洗校验** | `json_cleaner.extract` → `schema_validator.validate`（v0.5.0 差异化校验：`validate_info_structure(entity_type, info)` 按实体类型选择 Schema）→ `har_refiner.refine_info`（HAR 自洽重抽，v0.5.0 按实体类型生成差异化 prompt）→ `info_compressor.compress_info`（>1500字触发）→ `low_value_filter.filter` | tools |
+| **S5 规范化写入 DB** | `coords_migrator.migrate_coords`（旧数据迁移，按需）→ `quantifier.map_importance` → 智能体将字典转为 Entity/Relation 对象 → `id_router.route`（v0.5.0 角色 id 格式：`C_{name}__T_main_vol_{idx}`）→ `entity_merger.merge`（v0.5.0 多档案并行：角色按 `(name, type, t_main_volume)` 合并，不同卷不合并）→ `db_writer.write_all` | tools + AGENT |
+| **S6 LLM 整合清洗** | 智能体读取 `prompts/relation_modeling.md` 与 `prompts/schema_specification.md`，对 DB 中数据进行最终整合：旧关系轴化转换 → **T_main/E_module 审查与重做**（v0.5.1：`evaluate_skeleton_quality` + `rebuild_skeleton`）→ T_branch 挂载校验 → S_topo 双向构建 → 出边裁剪 → 关系边索引化 → 零散节点聚类 → `graph_builder.build_evolves_to_relations`（v0.5.0：人物弧光链）→ **人物小传构建**（v0.5.1：`prepare_character_synthesis` + `create_synthesis_entity`）→ 冲突深度校验 | AGENT + prompts |
+| **S7 触发报表** | `graph_builder.build` → `centrality_analyzer.analyze` → `community_detector.detect` → `bridges_finder.find` → `orphans_finder.find` → `stats_generator.generate` → `html_renderer.render` + `exporter.to_markdown`（v0.5.0 `group_by_character` 参数支持人物弧光总览导出）/`to_json` | tools |
 
-**Prompt 结构示例**:
+### 2.1 S2.5 增量压缩聚类+骨架构建
 
-```
-You are an expert Literary Stylist and Data Analyst.
+在 S2 摘要缓冲完成后，通过增量压缩聚类（RAPTOR 范式）构建时序骨架，替代 v0.4.0 的章节标题抽样+LLM一次性划分方案。
 
-**Global Context:**
-- Book: {{book_title}}
-- Genre: {{book_genre}}
-- Key Characters: {{main_characters}}
-- World Setting: {{world_setting}}
+**步骤1 — 语义聚类**:
+- 调用 `semantic_clusterer.cluster_summaries(summaries, use_embedding=True)`
+- 三重互补聚类策略：
+  - **时序聚类**（阈值 0.55）：识别 T_main 卷边界
+  - **场景聚类**（阈值 0.70）：按地点转移识别 E_module 边界
+  - **实体聚类**（阈值 0.65）：按角色活跃期识别 E_module 边界
+- Embedding 模型：`BAAI/bge-small-zh-v1.5` + cosine 相似度
+- 降级路径：import 失败时使用 Jaccard 关键词重合度
+- 输出：`{"t_main_candidates": [...], "module_candidates": [...]}`
 
-You are reading **Chunk #{{chunk_id}} of {{total_chunks}}**.
+**步骤2 — 增量骨架构建**:
+- 调用 `timeline_skeleton_builder.build_skeleton_incremental(cluster_results)`
+- 构建三层实体结构：
+  - **T_main 实体**：剧情卷，5-20 个，每个含 `stage`（开篇/发展/转折/高潮/收束/尾声）
+  - **E_module 实体**：剧情模块，每卷 ≤8 个，含 `start_chunk`/`end_chunk`/`theme`
+  - **关系**：HAS_MODULE（卷→模块）+ T_main（卷间时序/模块间时序）
+- 卷数 >20 时触发合并，卷数 <5 时触发扩展
+- 输出：`Skeleton` 数据结构（t_main_volumes/e_modules/t_main_relations/has_module_relations/t_main_module_relations）
 
-### INPUT
+**步骤3 — 降级路径**:
+- `build_skeleton_incremental` 失败时：自动回退 `build_skeleton(plot_modules)` 一次性模式
+- 摘要不足时：生成占位摘要（基于 chunk 内容），降低骨架质量但不中断管线
+- 降级标记：`skeleton_stats.fallback_used = True`
 
-Read file: `{{file_path}}`
-- Context (for continuity): offset={{context_offset}}, limit={{context_limit}}
-- **Target to analyze**: offset={{target_offset}}, limit={{target_limit}}
+**异常处理**:
+- 聚类结果为空：抛 ValueError（由调用方捕获）
+- 卷数不在 [5, 20] 范围：由 `_adjust_volume_count` 自动修正
+- E_module 数 >8/卷：由 `_merge_overflow_modules` 自动合并
 
-[剩余部分见 prompts/chunk.md]
+### 2.2 S3 按剧情模块批量提取
 
-### SPECIAL INSTRUCTION: Character Tracking (如果启用)
-The user wants a detailed profile for character: {{target_character}}
-[如果用户请求了角色档案，追加2.4中的角色追踪指令]
-```
+S2.5 完成后，按剧情模块批量加载 chunks，分发子智能体执行跨章节事件识别和实体提取。
 
-### 2.5 等待并监控
+**步骤1 — 跨章节事件识别**:
+- 按剧情模块批量加载对应 chunks
+- LLM 任务：识别该模块内的跨章节事件单元（跨 ≥2 章节，具有目的性，包含完整起因-经过-结果）
+- 原子动作（坐下、拿筷子、单次对话）不作为独立事件，仅作为 info 原材料
+- 输出：每个模块的事件单元列表（含 event_id、chapter_range、purpose、result）
 
-```python
-# 使用 AgentOutputTool 等待所有 agents 完成
-AgentOutputTool(agentId=agent1_id, block=True)
-AgentOutputTool(agentId=agent2_id, block=True)
-# ...
-```
+**步骤2 — 实体详情填充（v0.5.0 差异化 Info Schema）**:
+- 对每个实体，加载对应 chunks
+- LLM 任务：从 chunks 中归纳总结 info 字段
+- info 要求：LLM 语义提炼（非原文摘录拼凑），按实体类型使用差异化段结构：
 
-**预期输出**: `${OUTPUT_DIR}/chunks/chunk_01.json`, `chunk_02.json`, ...
+| 实体类型 | 段数 | 段结构 | 字数范围 |
+|----------|------|--------|---------|
+| event | 4 | 起因/经过/结果/模块定位 | 500-1500 |
+| character | 5 | 身份背景/性格特征/能力体系/人际关系/人物弧光 | 500-1500 |
+| location | 4 | 地理描述/政治经济/关联角色/剧情作用 | 400-1200 |
+| item | 4 | 来源/功能/持有者变更/剧情作用 | 400-1200 |
+| rule | 4 | 定义/约束条件/例外情况/剧情影响 | 400-1200 |
+| system | 4 | 体系概述/层级结构/核心规则/剧情作用 | 400-1200 |
+
+- 事件类型每段末尾必须附加 `[src:chunk_NNN]` 标记；非事件类型不强制
+- 超过字数上限时：触发 `info_compressor.compress_info` 压缩
+- 不足字数下限时：触发 HAR 重抽
+
+**步骤3 — 其他实体提取**:
+- 按剧情模块批量提取角色(C)、地点(L)、物品(I)、规则(R)实体
+- 每个实体分配五维坐标（T/L/C/E/R 唯一值）
+- 角色实体 id 格式：`C_{name}__T_main_vol_{idx}`（v0.5.0 多档案并行）
+- 通过关系边（R_strong/S_topo/T_branch）建立与剧情模块的索引
+
+**输出结果**: 完整实体列表（E_module + E_event + C + L + I + R）+ 关系列表（含 evolves_to 人物弧光链）。
 
 ---
 
-## 阶段 3: 整合生成报告
+## 3. 子智能体编排规范
 
-**执行者**: 1 个同步的 `general-purpose` agent
+### 3.1 增量压缩聚类+骨架构建（S2.5 阶段）
 
-### 3.1 启动整合 agent
+| 项 | 规范 |
+|----|------|
+| **输入** | 摘要列表（来自 `summary_buffer` 或 `document_distiller` 输出） |
+| **任务** | 调用 `semantic_clusterer.cluster_summaries` 进行三重聚类 → 调用 `timeline_skeleton_builder.build_skeleton_incremental` 增量构建骨架 |
+| **输出** | `Skeleton` 数据结构（t_main_volumes/e_modules/关系） |
+| **调用次数** | 1 次（全量摘要输入，增量压缩输出） |
+| **异常降级** | 增量压缩失败时回退 `build_skeleton` 一次性模式 |
 
-```python
-Task(
-  subagent_type="general-purpose",
-  run_in_background=False,  # 同步等待结果
-  description="整合小说分析报告",
-  prompt=f"""
-You are the Chief Literary Critic combining parallel reading reports.
+### 3.2 按模块批量提取子智能体（S3 阶段）
 
-### Input Files
+| 项 | 规范 |
+|----|------|
+| **输入** | 单个剧情模块 + 对应 chunks 内容 + `extraction_meta_prompt.md` 作为 system prompt |
+| **任务** | 按 prompts 中的身份定义、处理规则、输出格式（v0.5.0 差异化 Info Schema）、处理流程、状态机执行语义抽取：跨章节事件识别 → info 填充 → 其他实体提取 |
+| **输出** | 符合 `schema_specification.md` 的 JSON 对象列表（含五维坐标唯一值） |
+| **并行度** | 多剧情模块可并行分发，子智能体间无状态共享 |
+| **规模约束** | info 字段按实体类型使用差异化段结构（事件四段/角色五段/其他四段）；事件必须为跨章节完整单元（非原子动作）；角色实体 id 格式 `C_{name}__T_main_vol_{idx}` |
 
-1. Read metadata: `{output_dir}/metadata.json`
-2. Use Glob to find all chunks: `{output_dir}/chunks/*.json`
-3. Read all chunk JSONs (可并行读取)
+### 3.3 整合清洗子智能体（S6 阶段 · 图遍历审查）
 
-### Your Task
+| 项 | 规范 |
+|----|------|
+| **输入** | DB 中已写入的 Entity/Relation 全集 + `relation_modeling.md` + `schema_specification.md` |
+| **任务** | 数据完整录入图数据库后，由 LLM 进行按剧情模块批量图遍历审查和质量评估 |
+| **输出** | 更新后的 DB 记录（UPSERT 语义） |
 
-Compile a comprehensive Markdown report in **CHINESE**.
+**S6 图遍历审查子任务**（按序执行）：
 
-完整要求见提示词模板，但核心结构如下：
+1. **旧关系轴化转换** — 将旧7种关系类型映射为7种轴关系类型（located_in/belongs_to→S_topo入边, participates_in→T_branch, causes→A_causal, evolves_to→evolves_to（v0.5.0 独立类型）, relates_to/references→R_strong）
+2. **T_main/E_module 审查与重做**（v0.5.1 增强）— 调用 `graph_builder.evaluate_skeleton_quality` 评估骨架质量（T_main 卷数 / E_module 颗粒度 / T_branch 覆盖率三维度）。若 verdict=rebuild，调用 `graph_builder.rebuild_skeleton` 用提高后的阈值（0.70/0.85/0.80）重新聚类+构建骨架，然后重建 T_branch 挂载。重做失败时回退原始骨架
+3. **T_branch 挂载校验** — 确认每个 E_event 通过 T_branch 挂载到所属 E_module（若步骤 2 触发重做，需重新挂载）
+4. **S_topo 双向构建** — 实体→L 入边（地理归属，实体出边 ≤3）+ L→E_module/E_event 出边（空间索引，地点出边 ≤20）
+5. **出边裁剪** — 按扇出上限裁剪（剧情模块 T_branch ≤20 + R_strong ≤30；角色 ≤5；事件 ≤3；地点仅 S_topo 出边 ≤20），保留 strong 优先
+6. **关系边索引化** — 校验关系 description ≤50 字推荐，>100 字拒绝入库（详见 `relation_modeling.md` §6）
+7. **零散节点聚类** — 孤儿节点和微型节点聚类合并到轴上；碎片事件合并到所属跨章节事件单元
+8. **人物弧光链构建** — 调用 `graph_builder.build_evolves_to_relations` 为同一角色在不同卷的档案创建 evolves_to 关系链
+9. **人物小传构建**（v0.5.1 新增）— 调用 `character_synthesizer.prepare_character_synthesis` 收集各卷角色档案 → LLM 按 5 段结构（身份概述/性格演变/能力成长/关系网络/人物弧光）生成人物小传 → 调用 `character_synthesizer.create_synthesis_entity` 创建 `C_{name}__synthesis` 实体写入 DB
+10. **冲突深度校验** — 对 `conflict_detected=true` 的记录执行深度图遍历消解
 
-# 深度阅读报告: {{{{book_title}}}}
+### 3.4 报表触发子智能体（S7 阶段）
 
-## 1. 核心评价
-**【题材与标签】**: ...
-**【一句话点评】**: ...
-**【整体评分】**: ...
-
-## 2. 文体学分析
-### 2.1 语言风格与基调
-### 2.2 典型修辞手法
-
-## 3. 情节脉络
-[按阶段划分情节发展]
-
-## 4. 人物列传
-[主要角色的完整弧光]
-
-## 5. 黄金语录画廊
-### 🖋️ 景物与意境
-### ⚔️ 动作与场面
-### 🧠 哲思与心理
-
-**Output file**: `{output_dir}/report.md`
-
-**IMPORTANT:**
-- 整合模式: Synthesize，不是 list
-- metadata.json 可能有误，以 chunks 为准
-- 报告用中文，引用保持原文语言
-"""
-)
-```
-
-完整提示词模板见: `prompts/synthesize.md`
+| 项 | 规范 |
+|----|------|
+| **输入** | 整合清洗后的 DB |
+| **任务** | 调用图分析工具组生成报表与导出文件 |
+| **输出** | report.html / report.md / report.json |
 
 ---
 
-## 阶段 4: 角色档案生成（可选）
-
-**执行者**: 1 个同步的 `general-purpose` agent
-**触发条件**: 用户明确请求分析特定角色（如："生成裴语涵的角色档案"）
-
-### 4.1 前置检查
-
-在启动角色档案生成前，确认以下条件：
-- 阶段3已完成，`report.md` 已生成
-- 所有 `chunk_*.json` 文件完整存在
-- 用户指定了明确的角色名称
-
-### 4.2 启动角色档案 agent
-
-```python
-Task(
-  subagent_type="general-purpose",
-  run_in_background=False,  # 同步等待结果
-  description="生成角色档案",
-  prompt=f"""
-从提示词模板 prompts/character-profile.md 读取完整模板。
-
-关键变量替换：
-- {{{{target_character}}}}: {用户指定的角色名}
-- {{{{book_title}}}}: {从 metadata.json 读取}
-- {{{{output_dir}}}}: {当前分析的输出目录}
-
-执行步骤：
-1. 使用 Glob 找到所有 chunks: {output_dir}/chunks/*.json
-2. 读取 report.md: {output_dir}/report.md
-3. 从所有 chunks 中过滤包含目标角色的信息
-4. 按照模板要求生成角色档案
-5. 创建目录: mkdir -p {output_dir}/characters
-6. 保存到: {output_dir}/characters/profile_{角色名}.md
-
-CRITICAL:
-- 报告用简体中文
-- 原文引用必须保留原语言，禁止翻译
-- 自动识别角色别名（如"林玄言"="叶临渊"）
-- 重点分析角色成长弧光和心理变化
-"""
-)
-```
-
-完整提示词模板见: `prompts/character-profile.md`
-
-### 4.3 支持批量生成
-
-如果用户请求多个角色档案，可并行启动多个 agents：
-
-```python
-# 在单个消息中启动多个角色档案 agents
-Task(..., description="生成裴语涵档案", prompt=...)  # 角色1
-Task(..., description="生成季婵溪档案", prompt=...)  # 角色2
-Task(..., description="生成陆嘉静档案", prompt=...)  # 角色3
-```
-
-### 4.4 输出示例
-
-成功后，目录结构更新为：
+## 4. 目录路由
 
 ```
-/tmp/novel_analysis/<书名>_<timestamp>/
-├── metadata.json
-├── chunks/
-│   ├── chunk_01.json
-│   └── ...
-├── report.md
-└── characters/              # 新增目录
-    ├── profile_裴语涵.md
-    ├── profile_季婵溪.md
-    └── ...
+novel-analysis-skill/
+├── SKILL.md                          # 本文件（入口规范）
+├── prompts/                          # 执行说明元提示词
+│   ├── extraction_meta_prompt.md     # 主元提示词（v0.5.0 差异化 Info Schema；v0.5.1 无 S3 变更）
+│   ├── relation_modeling.md          # 关系建模补充规则（v0.5.0 含 evolves_to；v0.5.1 §9 骨架审查+人物小传）
+│   ├── schema_specification.md       # 输出 JSON Schema 规范（v0.5.0 按类型区分；v0.5.1 §4.8 人物小传 Schema）
+│   └── plot_module_prompt.md         # [legacy] S2.5 剧情模块划分提示词（v0.4.0 方案，已被增量聚类替代）
+├── tools/                            # 工具函数（无状态 Python）
+│   ├── text_chunker.py               # 文件读取 + 章节检测 + 分块（v0.5.0 自适应 chunk）
+│   ├── document_distiller.py         # 文档蒸馏：chunk → Blueprint 摘要（100-300字）
+│   ├── summary_buffer.py             # 滑动窗口缓冲（窗口50，flush间隔10）
+│   ├── semantic_clusterer.py         # 语义聚类（时序/场景/实体三重聚类）
+│   ├── timeline_skeleton_builder.py  # 时序骨架构建（增量压缩 + 一次性降级）
+│   ├── chapter_title_sampler.py      # [legacy] 章节标题抽样（v0.4.0 方案，已被增量聚类替代）
+│   ├── rule_locator.py               # 规则定位候选实体
+│   ├── json_cleaner.py               # LLM 输出 JSON 清洗
+│   ├── schema_validator.py           # Schema 校验（v0.5.0 差异化：按实体类型选择 Schema）
+│   ├── har_refiner.py                # HAR 自洽重抽（v0.5.0 按实体类型生成差异化 prompt）
+│   ├── info_compressor.py            # info 超长压缩
+│   ├── low_value_filter.py           # 低价值记录过滤
+│   ├── coords_migrator.py            # 旧六维→新五维坐标迁移
+│   ├── quantifier.py                 # 定性→定量映射
+│   ├── id_router.py                  # 实体 ID 路由（v0.5.0 角色 id 格式 C_{name}__T_main_vol_{idx}）
+│   ├── entity_merger.py              # 实体合并去重（v0.5.0 多档案并行：角色按卷合并）
+│   ├── db_writer.py                  # SQLite 写入
+│   ├── graph_builder.py              # NetworkX 图构建（v0.5.0 含 evolves_to 关系）
+│   ├── centrality_analyzer.py        # 中心性分析
+│   ├── community_detector.py         # 社群检测
+│   ├── bridges_finder.py             # 桥接节点识别
+│   ├── orphans_finder.py             # 孤立实体检测
+│   ├── stats_generator.py            # 图统计报告
+│   ├── html_renderer.py              # HTML 报表渲染
+│   ├── character_synthesizer.py      # 人物小传构建（v0.5.1 新增）
+│   ├── exporter.py                   # MD/JSON 导出（v0.5.0 group_by_character 参数）
+├── templates/                        # schema.sql + report.html.j2
+├── static/                           # report.js
+└── tests/                            # 测试用例（v0.5.0: test_chunk_adaptive/test_info_schema/test_multi_profile；v0.5.1: test_cluster_thresholds/test_skeleton_quality/test_rebuild_skeleton/test_character_synthesizer/test_synthesis_entity）
 ```
 
-**角色档案内容包含**：
-- 基础信息卡（姓名、别名、身份、登场时间、结局）
-- 外貌与形象（容貌、衣着、形象演变）
-- 性格侧写（核心特质、深度分析、语言风格）
-- 能力与技能（战斗风格/专业技能）
-- 个人履历（按时间线梳理关键事件）
-- 人际关系网（与其他角色的互动）
-- 印象深刻的原文（台词和侧写引用）
-- 心理分析与主题意义
-- 总结评价
+### prompts 路由优先级
+
+| 阶段 | 必读 | 选读 |
+|------|------|------|
+| S2.5 增量聚类 | —（纯工具，无 LLM 调用） | — |
+| S3 按模块批量提取 | `extraction_meta_prompt.md` | `schema_specification.md`（字段速查） |
+| S6 整合清洗 | `relation_modeling.md` + `schema_specification.md` | `extraction_meta_prompt.md` §7 校验列表 |
+
+### v0.5.0/v0.5.1 新增/变更工具速查
+
+| 工具 | 文件 | 阶段 | 职责 |
+|------|------|------|------|
+| `detect_chunk_size` | `tools/text_chunker.py` | S2 | 自适应 chunk 大小检测（三档 20K/8K/4K） |
+| `document_distiller.distill` | `tools/document_distiller.py` | S2 | 文档蒸馏：chunk → Blueprint 摘要（场景/行动/变动/因果） |
+| `SummaryBuffer` | `tools/summary_buffer.py` | S2 | 滑动窗口缓冲（窗口50，flush间隔10，FIFO溢出丢弃） |
+| `semantic_clusterer.cluster_summaries` | `tools/semantic_clusterer.py` | S2.5 | 三重语义聚类（时序0.55/场景0.70/实体0.65） |
+| `build_skeleton_incremental` | `tools/timeline_skeleton_builder.py` | S2.5 | 增量压缩构建 T_main + E_module 骨架 |
+| `get_info_schema` | `tools/models.py` | S3/S4 | 按实体类型返回差异化 Info Schema |
+| `validate_info_structure` | `tools/schema_validator.py` | S4 | 签名变更：新增 `entity_type` 参数，按类型校验 |
+| `generate_har_prompt` | `tools/har_refiner.py` | S4 | 按实体类型生成差异化 HAR 重抽 prompt |
+| `build_evolves_to_relations` | `tools/graph_builder.py` | S6 | 构建人物弧光关系链（evolves_to） |
+| `merge` / `_merge_entities` | `tools/entity_merger.py` | S5 | 合并键变更：角色按 `(name, type, t_main_volume)` 合并 |
+| `evaluate_skeleton_quality` | `tools/graph_builder.py` | S6 | 骨架质量评估（T_main卷数/E_module颗粒度/T_branch覆盖率） |
+| `rebuild_skeleton` | `tools/graph_builder.py` | S6 | 用提高后的阈值重建骨架（降级返回原始骨架） |
+| `prepare_character_synthesis` | `tools/character_synthesizer.py` | S6 | 收集各卷角色档案，按名分组排序 |
+| `create_synthesis_entity` | `tools/character_synthesizer.py` | S6 | 创建 `C_{name}__synthesis` 人物小传实体 |
 
 ---
 
-## 配置参数
+## 5. v0.4.0 → v0.5.1 改进摘要
 
-以下参数可根据需要调整：
+### 5.0 v0.5.1 补丁改进（短章打包 · 实证甜点）
 
-| 参数 | 默认值 | 说明 |
-|------|--------|------|
-| `target_tokens` | 50000 | 每块目标 token 数 |
-| `overlap_lines` | 200 | 块间重叠行数 |
-| `chars_per_token` | 1.35 | 中文字符/token 比率 |
-| `max_concurrent` | 16 | 最大并行 agent 数 |
+| # | 改进点 | v0.5.0 问题 | v0.5.1 方案 | 影响阶段 |
+|---|--------|------------|------------|---------|
+| 1 | 短章打包 (`pack_chapters`) | `DEFAULT_CHUNK_SIZE=20K` 仅是"上限"；均匀短章源（网文每章 ~2.4K 字）逐章成块，实测全职法师 763万字 → **3136 碎块**，自适应 chunk 大小完全失效 | `chunk_text(pack_chapters=True)` 默认开启：连续短章贪心合并至接近 chunk_size。全职法师全本 → **414 块（均值 18.4K 字）**，正中 20K 甜点 | S2 |
 
----
+> **实证依据**（`07_子项目代码/LLM对话作品卡/全职法师/novel_analysis/v05/experiment_report.md`）：同一 100K 窗口下，20K 切片抽取密度 1.35 rec/Kchar、字数达标率 94.8%、平均 662 字，均为 8K/20K/100K 三档最优；100K 单遍存在约 45% 尾部注意力衰减。故将 20K 打包固化为生产默认。
 
-## 错误处理
+### 5.1 v0.5.0 新增改进
 
-| 场景 | 处理方式 |
-|------|---------|
-| 文件不存在 | 立即终止，报告错误 |
-| 文件过大无法一次读取 | 使用 offset/limit 分段读取 |
-| 部分 chunk agent 失败 | 继续处理其他，报告中标注缺失块 |
-| 整合 agent 失败 | 保留 chunk JSONs，建议用户手动整合 |
+| # | 改进点 | v0.4.1 问题 | v0.5.0 方案 | 影响阶段 |
+|---|--------|------------|------------|---------|
+| 1 | 自适应 Chunk 大小 | 8K chars 固定，system_prompt(18K) 是 chunk 的 2.3 倍，浪费 token | 默认 20K chars，三档可调（20K/8K/4K），`detect_chunk_size()` 根据模型上下文自动选择 | S1/S2 |
+| 2 | 差异化 Info Schema | 所有实体类型统一四段叙事结构，对角色/地点/物品/规则/体系信息扭曲 | 6 种实体类型各有独立段结构，事件类型保留四段向后兼容，`validate_info_structure(entity_type, info)` 按类型校验 | S3/S4 |
+| 3 | 多档案并行实体策略 | 实体档案仅首次出现时归纳，后续仅做 info 字符串拼接，不随人物弧光更新 | 角色实体按 `C_name + T_main_vol` 双关键字拆分，`evolves_to` 关系串联人物弧光，合并器按 `(name, type, t_main_volume)` 合并 | S5/S6/S7 |
 
----
+### 5.2 v0.4.0 改进（历史基线）
 
-## 最终输出
+| # | 改进点 | v0.3.0 问题 | v0.4.0 方案 | 影响阶段 |
+|---|--------|------------|------------|---------|
+| 1 | 全局剧情模块划分 | 11,151事件/3,038散乱T值，无全局视角 | 新增 S2.5 阶段：章节标题抽样→LLM划分→T_main骨架 | S2→S3 之间 |
+| 2 | T类语义重构 | T_main 存具体事件串联（5,938条），主轴被淹没 | T_main 变纯索引（仅 E_module→E_module）；事件通过 T_branch 挂载 | S3/S4/S5/S6 |
+| 3 | 五维坐标唯一值化 | coords.C 存4个角色列表，坐标与关系混淆 | 六维→五维（移除K）；每维度从多值列表改为唯一值 | S3/S4/S5 |
+| 4 | info字段质量强化 | 平均235字，达标率1.5%，原文切片 | info 必须 LLM 语义提炼；500-1500字；>1500字压缩 | S3/S4 |
+| 5 | S_topo 双向 | S_topo 仅单向归属，地点不扇出 | 入边（实体→L）+出边（L→E_module/E_event），空间关系升为平行主轴 | S6 |
+| 6 | 关系边仅作索引 | 详情分散到关系 description（200+字） | description ≤50字推荐/≤100字上限；节点详情内聚于 info | S3/S4/S6 |
 
-成功完成后，输出目录结构：
-
-```
-/tmp/novel_analysis/<书名>_<timestamp>/
-├── metadata.json      # 全书元数据
-├── chunks/            # 各分块详细分析
-│   ├── chunk_01.json
-│   ├── chunk_02.json
-│   └── ...
-├── report.md          # 📖 最终深度阅读报告（中文）
-└── characters/        # 📋 角色档案（如果执行了阶段4）
-    ├── profile_角色A.md
-    └── ...
-```
-
-**向用户报告**:
-```
-分析完成！
-
-输出目录: /tmp/novel_analysis/<书名>_<timestamp>/
-├── metadata.json      # 元数据
-├── chunks/            # 分块分析 (N 个文件)
-│   ├── chunk_01.json
-│   └── ...
-├── report.md          # 深度阅读报告
-└── characters/        # 角色档案（如有）
-    └── profile_XX.md
-
-查看完整报告: cat <输出目录>/report.md
-查看角色档案: cat <输出目录>/characters/profile_XX.md
-```
+**核心设计哲学**：坐标=位置（唯一值），关系=连接（多值边）。先建立全局骨架，再填充局部内容，最后保证质量。
 
 ---
 
-## 使用示例
+## 6. 锚定文档
 
-### 示例 1: 完整分析
+| 文档 | 路径 |
+|------|------|
+| 系统全景需求定义书 | `02_策划文档/novel_analysis_skill/v0.5.1_升级/系统全景需求定义书.md` |
+| L0 项目定位 | `02_策划文档/novel_analysis_skill/v0.5.1_升级/00_技术锚定/L0_项目定位与架构概览.md` |
+| L1 模块边界 | `02_策划文档/novel_analysis_skill/v0.5.1_升级/00_技术锚定/L1_模块边界与需求索引.md` |
+| L2 数据模型 | `02_策划文档/novel_analysis_skill/v0.5.1_升级/00_技术锚定/L2_数据模型与核心算法.md` |
+| L3 接口契约 | `02_策划文档/novel_analysis_skill/v0.5.1_升级/00_技术锚定/L3_接口契约与约束.md` |
+| 构造计划 | `02_策划文档/novel_analysis_skill/v0.5.1_升级/tasks/plan.md` |
+| 论文 | `08_记忆数据/knowledge-base/skills/novel-analysis-skill/论文_信息提取压缩结构化聚类拓扑_v1.0.md` |
 
-**用户**: "帮我深度分析 novel.txt"
+---
 
-**你的执行**:
-1. 创建 todo list 跟踪进度
-2. 统计行数，创建输出目录
-3. 分段读取，生成 metadata.json
-4. 计算分块边界
-5. **在单个消息中**启动所有并行 chunk agents
-6. 等待全部完成
-7. 启动整合 agent（同步）
-8. 报告完成，提供目录路径
-
-### 示例 2: 分析 + 角色档案（带角色追踪）
-
-**用户**: "分析 novel.txt，并生成主角的角色档案"
-
-**你的执行**:
-1. 执行阶段1（粗读元数据）
-2. 从 metadata.json 识别主角名称（假设为"张三"）
-3. **启动阶段2时，在每个 chunk agent 的 prompt 末尾追加角色追踪指令**：
-   ```
-   ### SPECIAL INSTRUCTION: Character Tracking
-   The user wants a detailed profile for character: 张三
-
-   If 张三 appears in your chunk:
-   - Record ALL details (appearance, dialogue, actions, emotions)
-   - Capture verbatim quotes
-   - Note relationship developments
-
-   If 张三 does NOT appear: proceed normally
-   ```
-4. 等待所有 chunk agents 完成（此时每个包含张三的chunk都有详细记录）
-5. 启动阶段3（整合报告）
-6. 启动阶段4（角色档案），此时有充足的原始数据支持
-7. 报告完成，提供 report.md 和 profile_张三.md 的路径
-
-### 示例 3: 仅生成角色档案（已有分析数据）
-
-**用户**: "帮我生成裴语涵的角色档案"（前提：已经分析过琼明神女录）
-
-**你的执行**:
-1. 确认输出目录存在（如 `/tmp/novel_analysis/琼明神女录_20251208_154904/`）
-2. 检查 metadata.json、chunks/、report.md 都存在
-3. 直接启动角色档案 agent（阶段4），目标角色="裴语涵"
-4. 报告完成，提供 profile_裴语涵.md 的路径
-
-### 示例 4: 批量生成多个角色档案
-
-**用户**: "生成所有主要女性角色的档案"
-
-**你的执行**:
-1. 从 report.md 或 metadata.json 识别主要女性角色
-2. **在单个消息中**并行启动多个角色档案 agents
-3. 等待全部完成
-4. 报告完成，列出所有生成的档案路径
-
-**注意**: 始终使用 TodoWrite 跟踪各阶段的进度。
+**版本**: 0.5.1 | **状态**: ✅ 已完成 | **更新**: 2026-07-14

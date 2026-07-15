@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# 环境
+.env
+.env.*
+*.env
+
+# 数据库
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# 测试数据（大文件，不入库）
+tests/extraction_workspace_llm/distill/
+tests/extraction_workspace_llm/chunks/
+tests/extraction_workspace_llm/llm_outputs_legacy_3136/
+tests/extraction_workspace_llm/output_legacy/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
